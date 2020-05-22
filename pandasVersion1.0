@@ -1,0 +1,40 @@
+from os import listdir, path
+import xml.etree.ElementTree as ET
+import pandas as pd
+from os import listdir, path
+
+
+def filldata(newroot):
+    df_cols = ["country", "rank", "year", "gdppc", "neighbor", "direction"]
+    rows = []
+    for node in newroot:
+        country = node.attrib.get("name")
+        rank = node.find("rank").text if node is not None else None
+        year = node.find("year").text if node is not None else None
+        gdppc = node.find("gdppc").text if node is not None else None
+        if len(node.findall("neighbor")) > 1:
+            for temp in node.findall("neighbor"):
+                neighbor = temp.attrib.get("name")
+                direction = temp.attrib.get("direction")
+                rows.append({"country": country, "rank": rank,
+                             "year": year, "gdppc": gdppc, "neighbor": neighbor, "direction": direction})
+        else:
+            neighbor = node.find("neighbor").attrib.get("name")
+            direction = node.find("neighbor").attrib.get("direction")
+            rows.append({"country": country, "rank": rank,
+                         "year": year, "gdppc": gdppc, "neighbor": neighbor, "direction": direction})
+    out_df = pd.DataFrame(rows, columns=df_cols)
+    dataframes.append(out_df)
+
+
+mypath = '/home/nigel/Desktop/'
+files = [path.join(mypath,f) for f in listdir(mypath) if f.endswith('.xml')]
+dataframes = []
+for file in files:
+    tree = ET.parse(file)
+    root = tree.getroot()
+    filldata(root)
+for i in range(len(dataframes)):
+    if i+1 < len(dataframes):
+        dataframes[i] = pd.concat([dataframes[i], dataframes[i+1]], axis=1, sort=False)
+dataframes[0].to_csv('/home/nigel/Desktop/dataframe.csv', index=False, header=True)
